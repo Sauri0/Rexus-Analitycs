@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rexus Intelligence | Power Dashboard</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <link rel="stylesheet" href="style_v32.css">
+</head>
+
+<body>
+    <div class="orb-field">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <main class="app-shell">
+        <nav class="navbar glass">
+            <div class="logo">
+                <div class="logo-box"><i data-lucide="hexagon" size="24" color="#fff"></i></div>
+                <div class="logo-text">Rexus</div>
+            </div>
+
+            <div class="period-control glass">
+                <select id="select-month" class="month-input" onchange="syncPeriod()">
+                    <option value="ENE">Enero</option>
+                    <option value="FEB">Febrero</option>
+                    <option value="MAR">Marzo</option>
+                    <option value="ABR">Abril</option>
+                    <option value="MAY">Mayo</option>
+                    <option value="JUN">Junio</option>
+                    <option value="JUL">Julio</option>
+                    <option value="AGO">Agosto</option>
+                    <option value="SEP">Septiembre</option>
+                    <option value="OCT">Octubre</option>
+                    <option value="NOV">Noviembre</option>
+                    <option value="DIC">Diciembre</option>
+                </select>
+                <select id="select-year" class="month-input" onchange="syncPeriod()">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+                <button class="save-btn" onclick="saveCurrentReport()" title="Guardar Reporte Mensual">
+                    <i data-lucide="save"></i>
+                </button>
+                <input type="hidden" id="period-selector">
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showView('dashboard')"><i data-lucide="layout-dashboard"></i>
+                    General</button>
+                <button class="tab-btn" onclick="showView('matrix')"><i data-lucide="bar-chart-3"></i>
+                    Comparativa</button>
+                <button class="tab-btn" onclick="showView('brands')"><i data-lucide="layers"></i> Marcas</button>
+                <button class="tab-btn" onclick="showView('sellers')"><i data-lucide="users"></i> Vendedores</button>
+                <button class="tab-btn" onclick="showView('explorer')"><i data-lucide="database"></i> Explorer</button>
+            </div>
+            <div class="export-wrap" style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="tab-btn" onclick="exportToExcel()" style="background:var(--success); color:#fff; border:none">
+                    <i data-lucide="download"></i> Excel
+                </button>
+                <div id="file-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">0/4 Archivos
+                    Cargados</div>
+            </div>
+        </nav>
+
+        <section class="metrics-row" id="loader-section">
+            <div class="metric-card glass aires" id="card-aires">
+                <div class="icon-box"><i data-lucide="wind"></i></div>
+                <label>Meta Aires</label>
+                <h3 id="st-aires">Pendiente</h3>
+                <input type="file" id="input-aires" accept=".csv, .xlsx" hidden>
+                <button class="save-btn" onclick="document.getElementById('input-aires').click()" style="width:100%; margin-top:10px">Subir</button>
+            </div>
+            <div class="metric-card glass nodor" id="card-nodor">
+                <div class="icon-box"><i data-lucide="flame"></i></div>
+                <label>Meta Nodor</label>
+                <h3 id="st-nodor">Pendiente</h3>
+                <input type="file" id="input-nodor" accept=".csv, .xlsx" hidden>
+                <button class="save-btn" onclick="document.getElementById('input-nodor').click()" style="width:100%; margin-top:10px">Subir</button>
+            </div>
+            <div class="metric-card glass praga" id="card-praga">
+                <div class="icon-box"><i data-lucide="shield"></i></div>
+                <label>Meta Praga</label>
+                <h3 id="st-praga">Pendiente</h3>
+                <input type="file" id="input-praga" accept=".csv, .xlsx" hidden>
+                <button class="save-btn" onclick="document.getElementById('input-praga').click()" style="width:100%; margin-top:10px">Subir</button>
+            </div>
+            <div class="metric-card glass crm" id="card-crm">
+                <div class="icon-box"><i data-lucide="database"></i></div>
+                <label>CRM Central</label>
+                <h3 id="st-crm">Pendiente</h3>
+                <input type="file" id="input-crm" accept=".csv, .xlsx" hidden>
+                <button class="save-btn" onclick="document.getElementById('input-crm').click()" style="width:100%; margin-top:10px">Subir</button>
+            </div>
+            <div class="metric-card glass demo" id="card-demo">
+                <div class="icon-box" style="background:var(--primary); color:#fff"><i data-lucide="rocket"></i></div>
+                <label>Modo Demo</label>
+                <h3 id="st-demo">Disponible</h3>
+                <button class="save-btn" id="btn-demo" style="width:100%; margin-top:10px">Activar</button>
+            </div>
+        </section>
+
+        <!-- View: Dashboard -->
+        <section id="view-dashboard" class="view active">
+            <div class="metrics-row">
+                <div class="card glass insight-card">
+                    <div class="chart-header">
+                        <h4><i data-lucide="sparkles" style="color:var(--warning)"></i> Executive Insight</h4>
+                    </div>
+                    <div class="insight-body">
+                         <p id="insight-text">Carga archivos para comenzar el análisis incremental del mes...</p>
+                    </div>
+                </div>
+                
+                <div class="card glass analyst-card">
+                    <div class="chart-header">
+                        <h4><i data-lucide="brain-circuit" style="color:var(--primary-light)"></i> AI Situation Room</h4>
+                    </div>
+                    <div id="analyst-content" class="analyst-content">
+                        <p class="placeholder-text">Esperando datos para generar reporte estratégico...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metrics-row">
+                <div class="metric-card glass" style="border-left: 4px solid var(--primary)">
+                    <label>Inversión Total</label>
+                    <h3 id="kpi-total-spend">$0</h3>
+                </div>
+                <div class="metric-card glass" style="border-left: 4px solid var(--success)">
+                    <label>Ventas Atribuidas</label>
+                    <h3 id="kpi-total-sales">$0</h3>
+                </div>
+                <div class="metric-card glass" style="border-left: 4px solid var(--secondary)">
+                    <label>ROAS Meta</label>
+                    <h3 id="kpi-total-roas">0x</h3>
+                </div>
+                <div class="metric-card glass">
+                    <label>Total Prospectos</label>
+                    <h3 id="kpi-total-leads">0</h3>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card glass">
+                    <div class="chart-header">
+                        <h4><i data-lucide="bar-chart"></i> Rendimiento por Canal</h4>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="chart-channels"></canvas>
+                    </div>
+                </div>
+                <div class="card glass">
+                    <div class="chart-header">
+                        <h4><i data-lucide="pie-chart"></i> Mix de Ventas</h4>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="chart-brands"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- View: Matrix -->
+        <section id="view-matrix" class="view">
+            <div class="glass matrix-container">
+                <h2 style="margin-bottom: 2rem; font-size: 1.8rem;">Matriz de Eficiencia por Marca</h2>
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th>Identidad de Marca</th>
+                            <th>Inversión Real</th>
+                            <th>Ventas Atribuidas</th>
+                            <th>Conversiones Meta</th>
+                            <th>ROAS Final</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matrix-body">
+                        <!-- Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- View: Sellers -->
+        <section id="view-sellers" class="view">
+            <h2 style="margin-bottom: 2rem; font-size: 1.8rem;">Análisis de Vendedores (Prospectos vs Cierres)</h2>
+            <div class="seller-grid" id="seller-list">
+                <!-- Cards -->
+            </div>
+        </section>
+
+        <!-- View: Brands Window -->
+        <section id="view-brands" class="view">
+            <div class="brands-window-header">
+                <h2 style="margin-bottom: 2.5rem; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px;">Inteligencia de Marcas <span style="color:var(--primary); font-size: 0.9rem; vertical-align: middle; margin-left:10px; font-weight:600; background:rgba(99,102,241,0.1); padding: 4px 12px; border-radius: 20px;">v3.5 Premium</span></h2>
+            </div>
+            
+            <div class="brands-main-layout">
+                <div class="brands-analytics">
+                    <div class="glass chart-container-large">
+                        <div class="chart-header">
+                            <h4><i data-lucide="pie-chart"></i> Participación por Volumen ($)</h4>
+                            <div class="chart-stats">Market Share Total</div>
+                        </div>
+                        <div class="chart-body">
+                             <canvas id="chart-brands-volume"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass chart-container-large">
+                        <div class="chart-header">
+                            <h4><i data-lucide="package"></i> Volumen de Productos (Unidades)</h4>
+                            <div class="chart-stats">Top 8 Categorías</div>
+                        </div>
+                        <div class="chart-body">
+                             <canvas id="chart-brands-units"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="brands-sidebar">
+                    <div class="glass ranking-card">
+                        <h4 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;"><i data-lucide="list-ordered" style="color:var(--success)"></i> Ranking Global</h4>
+                        <div id="brands-ranking-list" class="brands-ranking-list">
+                            <p class="placeholder-text">Carga el CRM para ver el volumen...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- View: Explorer -->
+        <section id="view-explorer" class="view">
+            <div class="explorer-header">
+                <h2 style="font-size: 1.5rem;">Data Explorer Raw</h2>
+                <select id="explorer-target" class="explorer-select" onchange="renderRawTable()">
+                    <option value="aires">Meta Aires</option>
+                    <option value="nodor">Meta Nodor</option>
+                    <option value="praga">Meta Praga</option>
+                    <option value="crm">CRM Central</option>
+                </select>
+            </div>
+            <div class="table-wrap">
+                <table id="raw-table" class="raw-table">
+                    <thead id="head-raw"></thead>
+                    <tbody id="body-raw"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Seller Detail -->
+    <div id="seller-modal" class="modal-overlay">
+        <div class="modal-content glass seller-detailed">
+            <button class="close-modal" onclick="closeModal()"><i data-lucide="x"></i></button>
+            <div class="modal-header">
+                <div id="modal-avatar" class="avatar-lg">?</div>
+                <div class="header-info">
+                    <h2 id="modal-seller-name">Vendedor</h2>
+                    <p id="modal-seller-stats">Cargando estadísticas...</p>
+                </div>
+            </div>
+            
+            <div class="modal-navbar">
+                <button class="mod-tab active" onclick="switchModalTab('balance')">Balance</button>
+                <button class="mod-tab" onclick="switchModalTab('sales')">Ventas</button>
+                <button class="mod-tab" onclick="switchModalTab('leads')">Leads Perdidos</button>
+                <button class="mod-tab" onclick="switchModalTab('mix')">Mix Marcas</button>
+            </div>
+
+            <div class="modal-body">
+                <div id="mod-view-balance" class="modal-view active">
+                    <div class="detail-grid">
+                        <div class="detail-section">
+                            <h4><i data-lucide="info"></i> Comentarios y Notas</h4>
+                            <div id="modal-comments" class="comment-list"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="mod-view-sales" class="modal-view">
+                    <div class="table-wrap mini">
+                        <table class="raw-table">
+                            <thead><tr><th>Marca</th><th>Producto</th><th>Monto</th></tr></thead>
+                            <tbody id="modal-sales-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="mod-view-leads" class="modal-view">
+                    <div id="modal-lost" class="lost-list"></div>
+                </div>
+                <div id="mod-view-mix" class="modal-view">
+                    <canvas id="seller-mix-chart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app_v32.js?v=3.5.3"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

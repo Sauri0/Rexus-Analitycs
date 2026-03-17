@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Power Dashboard v2.0 Elite</title>
+
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- External Engines -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --bg-deep: #05070a;
+            --glass-white: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-inner: rgba(255, 255, 255, 0.01);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.3);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --brand-aires: #0ea5e9;
+            --brand-nodor: #f59e0b;
+            --brand-praga: #10b981;
+            --brand-crm: #8b5cf6;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .logo-text,
+        .tab-btn {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Dynamic Morphing Background */
+        .ambient-box {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 50%, #0d1117 0%, #05070a 100%);
+        }
+
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.15;
+            animation: float 25s infinite alternate ease-in-out;
+        }
+
+        .orb-1 {
+            width: 700px;
+            height: 700px;
+            background: var(--primary);
+            top: -250px;
+            right: -150px;
+        }
+
+        .orb-2 {
+            width: 600px;
+            height: 600px;
+            background: var(--brand-aires);
+            bottom: -150px;
+            left: -150px;
+            animation-delay: -7s;
+        }
+
+        .orb-3 {
+            width: 500px;
+            height: 500px;
+            background: var(--brand-crm);
+            top: 35%;
+            right: 25%;
+            animation-delay: -12s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(80px, 120px) scale(1.1) rotate(15deg);
+            }
+        }
+
+        .app-shell {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 2.5rem;
+            animation: fadeIn 0.8s ease-out;
+            flex: 1;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .glass {
+            background: var(--glass-white);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+        }
+
+        /* Navigation Header */
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .logo-ring {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), #818cf8);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 25px var(--primary-glow);
+        }
+
+        .logo-text {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -1.2px;
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text span {
+            color: var(--primary);
+            -webkit-text-fill-color: var(--primary);
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.4rem;
+            border-radius: 1.25rem;
+            gap: 0.25rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.9rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .tab-btn i {
+            width: 18px;
+            height: 18px;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        /* File Loaders Section */
+        .loader-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .upload-brick {
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.4s ease;
+            position: relative;
+            cursor: default;
+        }
+
+        .upload-brick::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 2rem;
+            border: 2px dashed rgba(255, 255, 255, 0.05);
+            pointer-events: none;
+        }
+
+        .upload-brick:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-5px);
+        }
+
+        .brick-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 1.5rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: transform 0.5s ease;
+        }
+
+        .upload-brick:hover .brick-icon {
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        .aires .brick-icon {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--brand-aires);
+        }
+
+        .nodor .brick-icon {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--brand-nodor);
+        }
+
+        .praga .brick-icon {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--brand-praga);
+        }
+
+        .crm .brick-icon {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--brand-crm);
+        }
+
+        .brick-title {
+            font-size: 1.35rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .brick-desc {
+            font-size: 0.95rem;
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+
+        .btn-action {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 1rem;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .btn-action:hover {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+
+        .brick-status {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            border-radius: 100px;
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-dim);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .brick-status.active {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+        }
+
+        /* View Containers */
+        .view-content {
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        .view-content.visible {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* KPI Cards */
+        .elite-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .elite-card {
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .elite-card label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: block;
+            margin-bottom: 1rem;
+        }
+
+        .elite-card h2 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -2.5px;
+            margin: 0.5rem 0;
+        }
+
+        .elite-card .sub-label {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .elite-card.accent h2 {
+            color: var(--primary);
+            text-shadow: 0 0 40px var(--primary-glow);
+        }
+
+        /* Comparison View */
+        .matrix-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 1rem;
+            margin-top: 2rem;
+        }
+
+        .matrix-table th {
+            padding: 1.5rem;
+            text-align: left;
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .matrix-table td {
+            padding: 2rem 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .matrix-table tr td:first-child {
+            border-radius: 1.5rem 0 0 1.5rem;
+            border-left: 1px solid var(--glass-border);
+        }
+
+        .matrix-table tr td:last-child {
+            border-radius: 0 1.5rem 1.5rem 0;
+            border-right: 1px solid var(--glass-border);
+        }
+
+        .matrix-table tr td {
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .brand-pill {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .point {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .roas-chip {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary);
+            padding: 0.5rem 1.25rem;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        /* Data Explorer */
+        .explorer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .explorer-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 1.5rem;
+            max-height: 600px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .raw-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .raw-table th {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            color: var(--text-dim);
+        }
+
+        .raw-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #d1d5db;
+        }
+
+        /* Control Footer */
+        .app-footer {
+            margin: 4rem auto 2rem;
+            max-width: 1400px;
+            width: 100%;
+            padding: 0 2.5rem;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, var(--primary), #818cf8);
+            border: none;
+            color: #fff;
+            padding: 1.25rem 2.5rem;
+            border-radius: 1.25rem;
+            font-weight: 800;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 10px 30px var(--primary-glow);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-export:hover {
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 1000px) {
+            .elite-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .matrix-table thead {
+                display: none;
+            }
+
+            .matrix-table tr td {
+                display: block;
+                border: none;
+                padding: 1rem 1.5rem;
+                border-radius: 0 !important;
+            }
+
+            .matrix-table tr td:first-child {
+                font-size: 1.5rem;
+                padding-top: 2rem;
+            }
+
+            .matrix-table tr td:last-child {
+                padding-bottom: 2rem;
+                border-bottom: 1px solid var(--glass-border);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient-box">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
+    <main class="app-shell">
+        <header class="header-nav glass">
+            <div class="brand-block">
+                <div class="logo-ring"><i data-lucide="zap" color="#fff" size="28"></i></div>
+                <div class="logo-text">Nexus<span>Elite</span></div>
+            </div>
+            <nav class="nav-tabs">
+                <button class="tab-btn active" onclick="switchView('dashboard')">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </button>
+                <button class="tab-btn" onclick="switchView('matrix')">
+                    <i data-lucide="layers"></i> Comparativas
+                </button>
+                <button class="tab-btn" onclick="switchView('explorer')">
+                    <i data-lucide="database"></i> Explorador
+                </button>
+            </nav>
+        </header>
+
+        <!-- Loader Section (Always visible) -->
+        <section class="loader-panel">
+            <div class="upload-brick glass aires" id="slot-aires">
+                <div class="brick-icon"><i data-lucide="wind"></i></div>
+                <h3 class="brick-title">Meta Aires</h3>
+                <p class="brick-desc">Reporte de rendimiento Meta</p>
+                <input type="file" id="input-aires" accept=".csv" hidden>
+                <button class="btn-action" onclick="document.getElementById('input-aires').click()">
+                    <i data-lucide="upload-cloud"></i> Cargar Archivo
+                </button>
+                <div class="brick-status" id="st-aires"><i data-lucide="circle-dashed"></i> Pendiente</div>
+            </div>
+
+            <div class="upload-brick glass nodor" id="slot-nodor">
+                <div class="brick-icon"><i data-lucide="flame"></i></div>
+                <h3 class="brick-title">Meta Nodor</h3>
+                <p class="brick-desc">Reporte de rendimiento Meta</p>
+                <input type="file" id="input-nodor" accept=".csv" hidden>
+                <button class="btn-action" onclick="document.getElementById('input-nodor').click()">
+                    <i data-lucide="upload-cloud"></i> Cargar Archivo
+                </button>
+                <div class="brick-status" id="st-nodor"><i data-lucide="circle-dashed"></i> Pendiente</div>
+            </div>
+
+            <div class="upload-brick glass praga" id="slot-praga">
+                <div class="brick-icon"><i data-lucide="shield"></i></div>
+                <h3 class="brick-title">Meta Praga</h3>
+                <p class="brick-desc">Reporte de rendimiento Meta</p>
+                <input type="file" id="input-praga" accept=".csv" hidden>
+                <button class="btn-action" onclick="document.getElementById('input-praga').click()">
+                    <i data-lucide="upload-cloud"></i> Cargar Archivo
+                </button>
+                <div class="brick-status" id="st-praga"><i data-lucide="circle-dashed"></i> Pendiente</div>
+            </div>
+
+            <div class="upload-brick glass crm" id="slot-crm">
+                <div class="brick-icon"><i data-lucide="users"></i></div>
+                <h3 class="brick-title">CRM Central</h3>
+                <p class="brick-desc">Data de ventas de vendedores</p>
+                <input type="file" id="input-crm" accept=".csv" hidden>
+                <button class="btn-action" onclick="document.getElementById('input-crm').click()">
+                    <i data-lucide="upload-cloud"></i> Cargar CRM
+                </button>
+                <div class="brick-status" id="st-crm"><i data-lucide="circle-dashed"></i> Pendiente</div>
+            </div>
+        </section>
+
+        <!-- View: Global Dashboard -->
+        <section id="view-dashboard" class="view-content visible">
+            <div class="elite-stats">
+                <div class="elite-card glass">
+                    <label>Ventas Netas</label>
+                    <h2 id="kpi-sales">$0</h2>
+                    <div class="sub-label"><i data-lucide="database" size="14"></i> Fuente: CRM Central</div>
+                </div>
+                <div class="elite-card glass">
+                    <label>Inversión Ads</label>
+                    <h2 id="kpi-spend">$0</h2>
+                    <div class="sub-label"><i data-lucide="credit-card" size="14"></i> Ad Manager Performance</div>
+                </div>
+                <div class="elite-card glass accent">
+                    <label>ROAS Elite</label>
+                    <h2 id="kpi-roas">0x</h2>
+                    <div class="sub-label"><i data-lucide="zap" size="14"></i> Multiplicador de Eficiencia</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+                <div class="glass" style="padding: 2.5rem;">
+                    <h4>Proyección de Retorno por Canal</h4>
+                    <canvas id="chart-main" style="max-height: 450px; margin-top: 2rem;"></canvas>
+                </div>
+                <div class="glass" style="padding: 2.5rem;">
+                    <h4>Análisis Inteligente</h4>
+                    <div id="insight-box"
+                        style="margin-top:2rem; line-height:1.8; color:var(--text-dim); font-size:1.1rem;">
+                        Carga el CRM y al menos un reporte de Meta para generar insights...
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- View: Brand Comparison Matrix -->
+        <section id="view-matrix" class="view-content">
+            <div class="glass" style="padding: 3rem;">
+                <h2 style="font-size: 2rem; margin-bottom: 2rem;">Matriz Comparativa de Marcas</h2>
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th>Marca</th>
+                            <th>Inversión (Real)</th>
+                            <th>Ventas (CRM)</th>
+                            <th>Resultados</th>
+                            <th>ROAS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matrix-body">
+                        <!-- Dynamic rows -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- View: Data Explorer -->
+        <section id="view-explorer" class="view-content">
+            <div class="glass" style="padding: 3rem;">
+                <div class="explorer-header">
+                    <h2>Explorador de Datos</h2>
+                    <select id="explorer-select" class="explorer-select" onchange="loadExplorerTable()">
+                        <option value="aires">Meta Aires</option>
+                        <option value="nodor">Meta Nodor</option>
+                        <option value="praga">Meta Praga</option>
+                        <option value="crm">CRM Central</option>
+                    </select>
+                </div>
+                <div class="table-wrap">
+                    <table id="raw-table" class="raw-table">
+                        <thead id="raw-head"></thead>
+                        <tbody id="raw-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <button class="btn-export" onclick="exportConsolidatedReport()">
+            <i data-lucide="download"></i> Exportar Reporte Consolidado
+        </button>
+    </footer>
+
+    <script>
+        // Core Logic State
+        const state = {
+            data: {
+                aires: { rows: [], spend: 0, results: 0 },
+                nodor: { rows: [], spend: 0, results: 0 },
+                praga: { rows: [], spend: 0, results: 0 },
+                crm: { rows: [], sales: 0, byBrand: { aires: 0, nodor: 0, praga: 0 } }
+            },
+            currentView: 'dashboard'
+        };
+
+        const COLUMN_ALIASEs = {
+            spend: ['Amount Spent', 'Importe gastado', 'Amount Spent (ARS)', 'Importe gastado (ARS)', 'Gasto'],
+            results: ['Results', 'Resultados', 'Conversions', 'Conversiones'],
+            sales: ['Monto_Total', 'Amount', 'Venta'],
+            brand: ['Marca', 'Brand'],
+            status: ['Estado', 'Status']
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initListeners();
+        });
+
+        function switchView(viewName) {
+            document.querySelectorAll('.view-content').forEach(v => v.classList.remove('visible'));
+            document.getElementById(`view-${viewName}`).classList.add('visible');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.toLowerCase().includes(viewName));
+            });
+
+            if (viewName === 'matrix') updateMatrix();
+            if (viewName === 'explorer') loadExplorerTable();
+        }
+
+        function initListeners() {
+            ['aires', 'nodor', 'praga', 'crm'].forEach(key => {
+                const input = document.getElementById(`input-${key}`);
+                input.addEventListener('change', (e) => handleUpload(key, e.target.files[0]));
+            });
+        }
+
+        async function handleUpload(key, file) {
+            if (!file) return;
+
+            const stEl = document.getElementById(`st-${key}`);
+            stEl.innerHTML = `<i data-lucide="loader-2" class="animate-spin" size="14"></i> Leyendo...`;
+            lucide.createIcons();
+
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    const data = results.data;
+                    if (key === 'crm') processCRM(data);
+                    else processMeta(key, data);
+
+                    stEl.classList.add('active');
+                    stEl.innerHTML = `<i data-lucide="check-circle" size="14"></i> Cargado (${data.length} filas)`;
+                    lucide.createIcons();
+
+                    updateGeneralStats();
+                    if (state.currentView === 'explorer') loadExplorerTable();
+                }
+            });
+        }
+
+        function findColumn(headers, field) {
+            const aliases = COLUMN_ALIASEs[field];
+            return headers.find(h => aliases.some(a => h.toLowerCase() === a.toLowerCase()));
+        }
+
+        function processMeta(brand, data) {
+            const headers = Object.keys(data[0] || {});
+            const spendCol = findColumn(headers, 'spend');
+            const resultsCol = findColumn(headers, 'results');
+
+            let totalSpend = 0;
+            let totalResults = 0;
+
+            data.forEach(row => {
+                totalSpend += parseFloat(row[spendCol]) || 0;
+                totalResults += parseFloat(row[resultsCol]) || 0;
+            });
+
+            state.data[brand] = { rows: data, spend: totalSpend, results: totalResults };
+        }
+
+        function processCRM(data) {
+            const headers = Object.keys(data[0] || {});
+            const salesCol = findColumn(headers, 'sales');
+            const brandCol = findColumn(headers, 'brand');
+            const statusCol = findColumn(headers, 'status');
+
+            let totalSales = 0;
+            let brandBuckets = { aires: 0, nodor: 0, praga: 0 };
+
+            data.forEach(row => {
+                const amount = parseFloat(row[salesCol]) || 0;
+                const brandVal = (row[brandCol] || '').toLowerCase();
+                const status = (row[statusCol] || '').toLowerCase();
+
+                if (status === 'vendido') {
+                    totalSales += amount;
+                    if (brandVal.includes('aire')) brandBuckets.aires += amount;
+                    else if (brandVal.includes('nodor')) brandBuckets.nodor += amount;
+                    else if (brandVal.includes('praga')) brandBuckets.praga += amount;
+                }
+            });
+
+            state.data.crm = { rows: data, sales: totalSales, byBrand: brandBuckets };
+        }
+
+        function updateGeneralStats() {
+            const totalSpend = state.data.aires.spend + state.data.nodor.spend + state.data.praga.spend;
+            const totalSales = state.data.crm.sales;
+            const roas = totalSpend > 0 ? (totalSales / totalSpend).toFixed(2) : 0;
+
+            document.getElementById('kpi-sales').innerText = formatARS(totalSales);
+            document.getElementById('kpi-spend').innerText = formatARS(totalSpend);
+            document.getElementById('kpi-roas').innerText = `${roas}x`;
+
+            const topSalesBrand = Object.keys(state.data.crm.byBrand).reduce((a, b) =>
+                state.data.crm.byBrand[a] > state.data.crm.byBrand[b] ? a : b
+            );
+
+            document.getElementById('insight-box').innerHTML = `
+                <p>Análisis de Rendimiento 💎</p>
+                <div style="margin-top:1.5rem;">
+                    Basado en la data cargada, el ecosistema digital presenta un <strong>ROAS consolidado de ${roas}x</strong>.
+                    La marca con mayor tracción en ventas registradas es <strong>${topSalesBrand.toUpperCase()}</strong>.
+                    Se ha detectado una inversión real de ${formatARS(totalSpend)} a través de los canales de Meta Ads.
+                </div>
+            `;
+
+            renderMainChart();
+        }
+
+        function updateMatrix() {
+            const tbody = document.getElementById('matrix-body');
+            tbody.innerHTML = '';
+
+            ['aires', 'nodor', 'praga'].forEach(brand => {
+                const s = state.data[brand];
+                const sales = state.data.crm.byBrand[brand];
+                const roas = s.spend > 0 ? (sales / s.spend).toFixed(2) : 0;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <div class="brand-pill">
+                            <div class="point" style="background: var(--brand-${brand})"></div>
+                            ${brand.charAt(0).toUpperCase() + brand.slice(1)}
+                        </div>
+                    </td>
+                    <td>${formatARS(s.spend)}</td>
+                    <td>${formatARS(sales)}</td>
+                    <td>${s.results} leads/ventas</td>
+                    <td><span class="roas-chip">${roas}x</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function loadExplorerTable() {
+            const key = document.getElementById('explorer-select').value;
+            const dataRows = (key === 'crm') ? state.data.crm.rows : state.data[key].rows;
+
+            const head = document.getElementById('raw-head');
+            const body = document.getElementById('raw-body');
+
+            head.innerHTML = '';
+            body.innerHTML = '';
+
+            if (dataRows.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 4rem;">Ningún archivo cargado para esta categoría.</td></tr>';
+                return;
+            }
+
+            const headers = Object.keys(dataRows[0]);
+            const hrow = document.createElement('tr');
+            headers.forEach(h => {
+                const th = document.createElement('th');
+                th.innerText = h;
+                hrow.appendChild(th);
+            });
+            head.appendChild(hrow);
+
+            dataRows.slice(0, 100).forEach(row => {
+                const tr = document.createElement('tr');
+                headers.forEach(h => {
+                    const td = document.createElement('td');
+                    td.innerText = row[h];
+                    tr.appendChild(td);
+                });
+                body.appendChild(tr);
+            });
+        }
+
+        let mainChart;
+        function renderMainChart() {
+            const ctx = document.getElementById('chart-main').getContext('2d');
+            if (mainChart) mainChart.destroy();
+
+            const brands = ['Aires', 'Nodor', 'Praga'];
+            const spends = [state.data.aires.spend, state.data.nodor.spend, state.data.praga.spend];
+            const sales = [state.data.crm.byBrand.aires, state.data.crm.byBrand.nodor, state.data.crm.byBrand.praga];
+
+            mainChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: brands,
+                    datasets: [
+                        { label: 'Gasto Meta', data: spends, backgroundColor: 'rgba(99, 102, 241, 0.4)', borderColor: '#6366f1', borderWidth: 2, borderRadius: 12 },
+                        { label: 'Ventas CRM', data: sales, backgroundColor: 'rgba(139, 92, 246, 0.4)', borderColor: '#8b5cf6', borderWidth: 2, borderRadius: 12 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        x: { ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: { legend: { labels: { color: '#f8fafc', font: { weight: 'bold' } } } }
+                }
+            });
+        }
+
+        function formatARS(val) {
+            return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
+        }
+
+        function exportConsolidatedReport() {
+            const reportData = ['Marca,Gasto,Ventas,ROAS,Resultados'];
+            ['aires', 'nodor', 'praga'].forEach(b => {
+                const s = state.data[b];
+                const v = state.data.crm.byBrand[b];
+                const r = s.spend > 0 ? (v / s.spend).toFixed(2) : 0;
+                reportData.push(`${b.toUpperCase()},${s.spend},${v},${r},${s.results}`);
+            });
+
+            const blob = new Blob([reportData.join('\n')], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `NexusReport_Elite_${new Date().toLocaleDateString()}.csv`);
+            a.click();
+        }
+    </script>
+</body>
+
+</html>
