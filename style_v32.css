@@ -1814,3 +1814,62 @@ nav .tabs {
     25% { transform: translateX(-5px); }
     75% { transform: translateX(5px); }
 }
+/* Password Toggle v8.2 */
+.pass-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.pass-wrapper input {
+    width: 100%;
+    padding-right: 45px !important;
+}
+
+.pass-toggle {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.pass-toggle:hover {
+    color: var(--primary-light);
+    transform: scale(1.1);
+}
+
+.pass-toggle i {
+    width: 18px;
+    height: 18px;
+}
+
+/* Logout Button v8.2 */
+.logout-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: #ef4444;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}

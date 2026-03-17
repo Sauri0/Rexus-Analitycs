@@ -45,6 +45,7 @@ function checkLogin() {
     
     // Admin Credentials
     if (user === 'AdminPraga' && pass === 'Praga@2026') {
+        localStorage.setItem('rexus_session', 'active'); // v8.2: Save session
         document.getElementById('view-login').style.display = 'none';
         exitToHub(); // v8.1: Unified navigation Fix
         // Initialize icons for the hub
@@ -55,6 +56,29 @@ function checkLogin() {
         setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
     }
 }
+
+/**
+ * Logout & Security Helpers (v8.2)
+ */
+window.logout = function() {
+    localStorage.removeItem('rexus_session');
+    location.reload(); 
+};
+
+window.togglePassword = function() {
+    const input = document.getElementById('login-pass');
+    const icon = document.getElementById('eye-icon');
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('data-lucide', 'eye-off');
+    } else {
+        input.type = 'password';
+        icon.setAttribute('data-lucide', 'eye');
+    }
+    if (window.lucide) lucide.createIcons();
+};
+
 
 // Enter Key Listener
 document.addEventListener('keypress', (e) => {
@@ -139,6 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
+    // Session Check v8.2
+    if (localStorage.getItem('rexus_session') === 'active') {
+        document.getElementById('view-login').style.display = 'none';
+        exitToHub();
+    }
+
     // File inputs mapping
     const inputs = {
         'input-aires': 'aires',
@@ -356,8 +386,8 @@ async function handleLocalFile(file) {
         localState.filesLoaded = 1; // v6.2
         if (window.lucide) lucide.createIcons();
     } catch (e) {
-        console.error("Local Error:", e);
-        statusEl.innerText = "Error en archivo";
+        console.error("Local Module Error:", e);
+        statusEl.innerHTML = `<i data-lucide="alert-circle"></i> Error en Estructura`;
     }
 }
 
@@ -1138,8 +1168,8 @@ async function handleFileSelect(slot, file) {
         updateSystem();
 
     } catch (error) {
-        console.error("Error processing file:", error);
-        statusEl.innerText = "Error";
+        console.error("Critical Processing Error:", error);
+        statusEl.innerHTML = `<i data-lucide="alert-circle"></i> Error de Formato`;
         statusEl.style.color = 'var(--danger)';
     }
 }
@@ -2406,8 +2436,8 @@ async function handleComercialesFile(file) {
         comercialesState.filesLoaded = 1;
         if (window.lucide) lucide.createIcons();
     } catch (e) {
-        console.error("Comerciales Error:", e);
-        statusEl.innerText = "Error en lectura";
+        console.error("Comerciales Module Error:", e);
+        statusEl.innerHTML = `<i data-lucide="alert-circle"></i> Error en Datos`;
     }
 }
 
@@ -2449,11 +2479,16 @@ function processComercialesData() {
                 m.loss_reasons[loss_reason] = (m.loss_reasons[loss_reason] || 0) + 1;
             }
 
-            if (!m.sellers[seller]) m.sellers[seller] = { leads: 0, sales: 0, amount: 0 };
+            if (!m.sellers[seller]) {
+                m.sellers[seller] = { leads: 0, sales: 0, amount: 0, lost_leads: [], comments: [], detailed_sales: [], loss_reasons: {} };
+            }
             m.sellers[seller].leads++;
             if (isSale) {
                 m.sellers[seller].sales++;
                 m.sellers[seller].amount += monto;
+                m.sellers[seller].detailed_sales.push({ brand, product, amount: monto });
+            } else if (loss_reason) {
+                m.sellers[seller].loss_reasons[loss_reason] = (m.sellers[seller].loss_reasons[loss_reason] || 0) + 1;
             }
         });
     });
