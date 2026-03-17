@@ -1165,7 +1165,11 @@ async function handleFileSelect(slot, file) {
         const countEl = document.getElementById('file-count');
         if (countEl) countEl.innerText = `${state.filesLoaded}/${state.totalSlots}`;
         
-        updateSystem();
+        try {
+            updateSystem();
+        } catch (sysError) {
+            console.warn("UI Update Warning (Non-critical):", sysError);
+        }
 
     } catch (error) {
         console.error("Critical Processing Error:", error);
@@ -1339,7 +1343,8 @@ function updateSystem() {
     renderMatrix();
     renderSellers();
     renderCharts();
-    renderRawTable();
+    // renderRawTable(); // Removed: Undefined in v32
+    if (window.lucide) lucide.createIcons();
 }
 
 function calculateGlobals() {
@@ -1550,6 +1555,13 @@ function showSellerDetail(name, module = 'meta') {
     const seller = source[name];
     if (!seller) return;
 
+    // v8.3 Robustness: Ensure missing fields don't crash the modal
+    if (!seller.loss_reasons) seller.loss_reasons = {};
+    if (!seller.detailed_sales) seller.detailed_sales = [];
+    if (!seller.leads) seller.leads = 0;
+    if (!seller.sales) seller.sales = 0;
+    if (!seller.amount) seller.amount = 0;
+
     state.currentSeller = name; 
     state.currentSellerModule = module;
 
@@ -1665,17 +1677,20 @@ function renderSellerVentas() {
         return;
     }
 
-    list.innerHTML = seller.detailed_sales.map(s => {
-        const bLower = s.brand.toLowerCase();
+    list.innerHTML = (seller.detailed_sales || []).map(s => {
+        const bLabel = s.brand || 'S/M';
+        const pLabel = s.product || 'Otros';
+        const amt = s.amount || 0;
+        const bLower = bLabel.toLowerCase();
         const brandColor = bLower.includes('aires') ? 'var(--primary)' : 
                           bLower.includes('nodor') ? 'var(--warning)' : 
                           bLower.includes('praga') ? 'var(--success)' : 'var(--text-muted)';
         
         return `
             <tr>
-                <td><div class="brand-cell"><span class="dot" style="background:${brandColor}"></span> ${s.brand}</div></td>
-                <td>${s.product}</td>
-                <td style="font-weight:700; color:#fff">${formatCurrency(s.amount)}</td>
+                <td><div class="brand-cell"><span class="dot" style="background:${brandColor}"></span> ${bLabel}</div></td>
+                <td>${pLabel}</td>
+                <td style="font-weight:700; color:#fff">${formatCurrency(amt)}</td>
             </tr>
         `;
     }).join('');
@@ -2634,7 +2649,7 @@ function renderComercialesSellers() {
         <div class="dashboard-grid">
             ${sorted.map(([name, s], idx) => `
                 <div class="seller-card glass animate-slide-up" style="animation-delay: ${idx * 0.1}s; cursor: pointer;"
-                     onclick="showSellerDetail('${name.replace(/'/g, "\\")}', 'comerciales')">
+                     onclick="showSellerDetail('${name.replace(/'/g, "\\'")}', 'comerciales')">
                     <div class="seller-header">
                         <div class="avatar-glow">${name.charAt(0)}</div>
                         <div class="seller-info"><strong>${name}</strong><span>Comercial Externo</span></div>
@@ -2802,6 +2817,14 @@ window.switchComercialesPeriod = function(period) {
     if (comercialesState.history[period]) {
         comercialesState.metrics = JSON.parse(JSON.stringify(comercialesState.history[period].metrics));
         comercialesState.filesLoaded = 1;
+        
+        // Refresh active view (v8.3)
+        const activeTab = document.querySelector('#module-comerciales .tab-btn.active');
+        const onclick = activeTab ? activeTab.getAttribute('onclick') : '';
+        if (onclick.includes('dashboard')) renderComercialesDashboard();
+        if (onclick.includes('vendedores')) renderComercialesSellers();
+        if (onclick.includes('productos')) renderComercialesProducts();
+
         const [m, y] = period.split(' ');
         const selM = document.getElementById('comerciales-select-month');
         const selY = document.getElementById('comerciales-select-year');
